@@ -53,7 +53,7 @@ void PoolAllocator::deallocate(const void * ptr)
             m_used_map[offset].second = false;
 
             std::size_t size = m_used_map[offset].first;
-            while (true) {
+            while (offset + size < m_used_map.size()) {
                 offset -= offset % (size * 2);
                 if (!m_used_map[offset].second && !m_used_map[offset + size].second) {
                     m_used_map[offset + size].first = 0;
