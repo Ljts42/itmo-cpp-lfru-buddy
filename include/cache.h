@@ -75,7 +75,7 @@ inline T & Cache<Key, KeyProvider, Allocator>::get(const Key & key)
 
     if (m_max_low_size == m_low.size()) {
         KeyProvider * last = m_low.back();
-        m_alloc.template destroy<T>(last);
+        m_alloc.destroy(last);
         m_low.pop_back();
     }
 
