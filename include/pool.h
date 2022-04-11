@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 #include <new>
 #include <vector>
@@ -10,9 +11,10 @@ public:
     PoolAllocator(const unsigned min_p, const unsigned max_p)
         : m_block_size(1 << min_p)
         , m_pool_size(1 << max_p)
-        , m_storage(m_pool_size)
+        , m_storage(1 << max_p)
         , m_used_map(1 << (max_p - min_p))
     {
+        assert(max_p > min_p);
         m_used_map[0].first = 1 << (max_p - min_p);
     }
 
@@ -26,6 +28,7 @@ private:
 
     const std::size_t m_block_size;
     const std::size_t m_pool_size;
+
     std::vector<std::byte> m_storage;
     std::vector<std::pair<std::size_t, bool>> m_used_map;
 };
