@@ -2,27 +2,25 @@
 
 #include <functional>
 
-std::size_t PoolAllocator::find_empty_place(std::size_t k)
+std::size_t PoolAllocator::find_empty_place(std::size_t order)
 {
-    if (k > m_used_map.size()) {
+    if (order >= m_available_blocks.size()) {
         return npos;
     }
-
-    for (std::size_t i = 0; i < m_used_map.size(); i += k) {
-        if (!m_used_map[i].second && m_used_map[i].first == k) {
-            return i;
+    std::size_t result;
+    if (m_available_blocks[order].empty()) {
+        result = find_empty_place(order + 1);
+        if (result != npos) {
+            m_available_blocks[order].insert(result + (1 << order));
         }
     }
-
-    std::size_t res = find_empty_place(k << 1);
-    if (res < m_used_map.size()) {
-        m_used_map[res].first >>= 1;
-        assert(res + m_used_map[res].first < m_used_map.size());
-        m_used_map[res + m_used_map[res].first].first = m_used_map[res].first;
-        return res;
+    else {
+        result = *m_available_blocks[order].begin();
+        if (result != npos) {
+            m_available_blocks[order].erase(result);
+        }
     }
-
-    return npos;
+    return result;
 }
 
 void * PoolAllocator::allocate(const std::size_t n)
@@ -31,16 +29,14 @@ void * PoolAllocator::allocate(const std::size_t n)
         throw std::bad_alloc{};
     }
 
-    std::size_t k = 1;
-
-    while (k * m_block_size < n) {
-        k <<= 1;
+    std::size_t order = 0;
+    while (m_block_size * (1 << order) < n) {
+        order++;
     }
-
-    const auto pos = find_empty_place(k);
+    const auto pos = find_empty_place(order);
 
     if (pos != npos) {
-        m_used_map[pos].second = true;
+        m_used_map[pos] = true;
         return &m_storage[pos * m_block_size];
     }
     throw std::bad_alloc{};
@@ -57,21 +53,21 @@ void PoolAllocator::deallocate(const void * ptr)
         std::size_t offset = (b_ptr - begin) / m_block_size;
 
         if (offset < m_used_map.size()) {
-            m_used_map[offset].second = false;
-            std::size_t size = m_used_map[offset].first;
-            offset -= offset % (size << 1);
-
-            while (offset + size < m_used_map.size()) {
-                if (!m_used_map[offset].second && !m_used_map[offset + size].second) {
-                    m_used_map[offset + size].first = 0;
-                    size <<= 1;
-                    m_used_map[offset].first = size;
-                    offset -= offset % (size << 1);
-                }
-                else {
+            m_used_map[offset] = false;
+            std::size_t order = 0;
+            while (order + 1 < m_available_blocks.size()) {
+                std::size_t united = offset - offset % (1 << (order + 1));
+                std::size_t buddy = (united != offset) ? united : offset + (1 << order);
+                if (m_used_map[buddy]) {
                     break;
                 }
+                if (m_available_blocks[order].count(buddy)) {
+                    m_available_blocks[order].erase(buddy);
+                    offset = united;
+                }
+                order++;
             }
+            m_available_blocks[order].insert(offset);
         }
     }
 }
