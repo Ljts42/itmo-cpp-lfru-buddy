@@ -1,6 +1,14 @@
 #include "pool.h"
 
-#include <functional>
+PoolAllocator::PoolAllocator(const unsigned min_p, const unsigned max_p)
+    : m_block_size(1 << min_p)
+    , m_pool_size(1 << max_p)
+    , m_storage(1 << max_p)
+    , m_available_blocks(max_p - min_p + 1)
+    , m_used_map(1 << (max_p - min_p))
+{
+    m_available_blocks[max_p - min_p].insert(0);
+}
 
 std::size_t PoolAllocator::find_empty_place(std::size_t order)
 {
@@ -49,7 +57,6 @@ void PoolAllocator::deallocate(const void * ptr)
     std::less<const std::byte *> cmp;
 
     if (b_ptr == begin || (cmp(begin, b_ptr) && cmp(b_ptr, &m_storage.back() + 1))) {
-        assert(((b_ptr - begin) % m_block_size) == 0);
         std::size_t offset = (b_ptr - begin) / m_block_size;
 
         if (offset < m_used_map.size()) {

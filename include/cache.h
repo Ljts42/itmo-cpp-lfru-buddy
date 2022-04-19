@@ -11,22 +11,10 @@ class Cache
 {
 public:
     template <class... AllocArgs>
-    Cache(const std::size_t cache_size, AllocArgs &&... alloc_args)
-        : m_max_top_size(cache_size)
-        , m_max_low_size(cache_size)
-        , m_alloc(std::forward<AllocArgs>(alloc_args)...)
-    {
-    }
+    Cache(const std::size_t, AllocArgs &&...);
 
-    std::size_t size() const
-    {
-        return m_top.size() + m_low.size();
-    }
-
-    bool empty() const
-    {
-        return m_top.empty() && m_low.empty();
-    }
+    std::size_t size() const;
+    bool empty() const;
 
     template <class T>
     T & get(const Key &);
@@ -46,6 +34,27 @@ private:
     std::list<KeyProvider *> m_top;
     std::list<KeyProvider *> m_low;
 };
+
+template <class Key, class KeyProvider, class Allocator>
+template <class... AllocArgs>
+inline Cache<Key, KeyProvider, Allocator>::Cache(const std::size_t cache_size, AllocArgs &&... alloc_args)
+    : m_max_top_size(cache_size)
+    , m_max_low_size(cache_size)
+    , m_alloc(std::forward<AllocArgs>(alloc_args)...)
+{
+}
+
+template <class Key, class KeyProvider, class Allocator>
+inline std::size_t Cache<Key, KeyProvider, Allocator>::size() const
+{
+    return m_top.size() + m_low.size();
+}
+
+template <class Key, class KeyProvider, class Allocator>
+inline bool Cache<Key, KeyProvider, Allocator>::empty() const
+{
+    return m_top.empty() && m_low.empty();
+}
 
 template <class Key, class KeyProvider, class Allocator>
 template <class T>

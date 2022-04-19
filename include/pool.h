@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
+#include <functional>
 #include <new>
 #include <set>
 #include <vector>
@@ -9,19 +9,10 @@
 class PoolAllocator
 {
 public:
-    PoolAllocator(const unsigned min_p, const unsigned max_p)
-        : m_block_size(1 << min_p)
-        , m_pool_size(1 << max_p)
-        , m_storage(1 << max_p)
-        , m_available_blocks(max_p - min_p + 1)
-        , m_used_map(1 << (max_p - min_p))
-    {
-        assert(max_p > min_p);
-        m_available_blocks[max_p - min_p].insert(0);
-    }
+    PoolAllocator(const unsigned, const unsigned);
 
     void * allocate(const std::size_t);
-    void deallocate(const void * ptr);
+    void deallocate(const void *);
 
 private:
     static constexpr std::size_t npos = static_cast<std::size_t>(-1);
