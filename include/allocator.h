@@ -18,9 +18,9 @@ public:
     }
 
     template <class T>
-    void destroy(void * ptr)
+    void destroy(T * ptr)
     {
-        static_cast<T *>(ptr)->~T();
+        ptr->~T();
         deallocate(ptr);
     }
 };
